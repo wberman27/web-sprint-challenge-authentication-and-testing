@@ -5,10 +5,10 @@ const {jwtSecret} = require('../secrets/index');
 const Users = require('../users/users-model')
 const {checkUserPass} = require('../middleware/checkUserPass')
 
-router.post('/register', checkUserPass, (req, res, next) => {
+router.post('/register', checkUserPass, (req, res) => {
   let user = req.body;
-  const hash = bcrypt.hashSync(user.password, 8);
-  user.password = hash;
+  const hash = bcrypt.hashSync(user.password, 8); //create a hash for password, with 8 rounds
+  user.password = hash; //the user password is now the hash
 
   Users.add(user)
   .then(addedUser =>{
@@ -50,8 +50,8 @@ router.post('/login', checkUserPass, async (req, res, next) => {
   try{
     const {username, password} = req.body;
     const [user] = await Users.findBy({user});
-    if(user && bcrypt.compareSync(password, user.password)){
-      const token = makeToken(user);
+    if(user && bcrypt.compareSync(password, user.password)){ //bcrypt compares passwords
+      const token = makeToken(user); //make token for user
       res.status(200).json({message: `welcome, ${username}`, token})
     }else{
       res.status(401).json("invalid credentials")
@@ -83,5 +83,17 @@ router.post('/login', checkUserPass, async (req, res, next) => {
       the response body should include a string exactly as follows: "invalid credentials".
   */
 });
+
+//this function will make a token, taking in a user
+function makeToken(user){
+  const payload = {
+    subject: user.id,
+    username: user.username
+  };
+  const options = { //configurations for the token
+    expiresIn: "120s"
+  };
+  return jwt.sign(payload, jwtSecret, options); //this signs/creates the token
+}
 
 module.exports = router;
