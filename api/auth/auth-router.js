@@ -7,7 +7,8 @@ const { checkUserPass } = require('../middleware/checkUserPass')
 
 router.post('/register', checkUserPass, (req, res) => {
   let user = req.body;
-  const hash = bcrypt.hashSync(user.password, 8); //create a hash for password, with 8 rounds
+  const rounds = process.env.BCRYPT_ROUNDS || 8; //allows the round of hashing to use env or 8
+  const hash = bcrypt.hashSync(user.password, rounds); //create a hash for password, with defined rounds
   user.password = hash; //the user password is now the hash
 
   Users.add(user) //add registered user to db
