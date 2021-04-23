@@ -1,7 +1,6 @@
 const request = require('supertest')
 const server = require('./server')
 const db = require('../data/dbConfig')
-const { checkUserPass } = require('./middleware/checkUserPass')
 const Users = require('./users/users-model')
 
 const userOne = {username:"Will", password:"1234"}
@@ -54,7 +53,7 @@ describe("[POST] /auth/register testing", ()=>{
 })
 
 describe("[POST] /auth/login testing", ()=>{
-  it("tests the response for login to be welcome back user with a token", async ()=>{
+  it("tests the response for login to be 'welcome back, user' and give a token", async ()=>{
     await request(server).post('/api/auth/register').send(userOne)
     const login = await request(server).post('/api/auth/login').send(userOne)
     expect(login.body.message).toBe("welcome, Will");
@@ -64,7 +63,7 @@ describe("[POST] /auth/login testing", ()=>{
     const login = await request(server).post('/api/auth/login').send({username: "I forgot my pass"})
     expect(login.body).toBe("username and password required")
   })
-  it("test that the wrong password will give invalid credentials error", async ()=>{
+  it("test that the wrong password will give 'invalid credentials' error", async ()=>{
     await request(server).post('/api/auth/register').send(userOne)
     const login = await request(server).post('/api/auth/login').send({username: "Will", password: "abc"})
     expect(login.body).toBe("invalid credentials")
@@ -83,11 +82,11 @@ describe("[GET] /jokes testing", ()=>{
     const res = await request(server).get('/api/jokes')
     expect(res.status).toBe(401)
   })
-  it("tests the response message to be token required with no token", async ()=>{
+  it("tests the response message to be 'token required' with no token", async ()=>{
     const res = await request(server).get('/api/jokes')
     expect(res.body).toBe("token required")
   })
-  it("tests the response message to be token invalid with wrong token", async ()=>{
+  it("tests the response message to be 'token invalid' with wrong token", async ()=>{
     const token = "1234567890WDAWDWADWADWADWADWASDASDASDASD"
     const res = await request(server).get('/api/jokes').set('Authorization', token)
     expect(res.body).toBe("token invalid")
