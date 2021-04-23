@@ -14,9 +14,9 @@ server.use(helmet());
 server.use(cors());
 server.use(express.json());
 
+server.use('/api/users', usersRouter);
 server.use('/api/auth', authRouter);
 server.use('/api/jokes', restrict, jokesRouter); // only logged-in users should have access!
-server.use('/api/users', usersRouter);
 
 server.get('/', (req,res)=>{
     res.status(200).json({api: "up and running!"})

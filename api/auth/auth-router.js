@@ -1,9 +1,9 @@
 const router = require('express').Router();
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const {jwtSecret} = require('../secrets/index');
+const { jwtSecret } = require('../secrets/index');
 const Users = require('../users/users-model')
-const {checkUserPass} = require('../middleware/checkUserPass')
+const { checkUserPass } = require('../middleware/checkUserPass')
 
 router.post('/register', checkUserPass, (req, res) => {
   let user = req.body;
@@ -12,7 +12,7 @@ router.post('/register', checkUserPass, (req, res) => {
 
   Users.add(user)
   .then(addedUser =>{
-    res.status(201).json(addedUser[0]);
+    res.status(201).json(addedUser);
   })
   .catch(() =>{
     res.status(401).json("username taken")
@@ -49,7 +49,7 @@ router.post('/register', checkUserPass, (req, res) => {
 router.post('/login', checkUserPass, async (req, res, next) => {
   try{
     const {username, password} = req.body;
-    const [user] = await Users.findBy({user});
+    const [user] = await Users.findBy({username});
     if(user && bcrypt.compareSync(password, user.password)){ //bcrypt compares passwords
       const token = makeToken(user); //make token for user
       res.status(200).json({message: `welcome, ${username}`, token})
