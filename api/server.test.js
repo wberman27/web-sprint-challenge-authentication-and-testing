@@ -19,76 +19,81 @@ afterAll(async ()=>{
   await db.destroy() //cuts off connection to db
 })
 
-//tests
+//sanity test ----
 
 test('sanity', () => {
   expect(true).toBe(true)
 })
 
-//API endpoints
-describe("[POST] /auth/register testing", ()=>{
+//api endpoints tests ----
+
+//register
+describe("[POST] /api/auth/register - REGISTER", ()=>{
   it("tests the response of register to be correct object format", async ()=>{
     const res = await request(server).post('/api/auth/register').send(userOne)
     const hashedPass = res.body.password;
     expect(res.body).toMatchObject({id:1, username:"Will", password:hashedPass})
   })
-  it("tests that the username must be unique", async ()=>{
+  it("tests that the username must be unique and show error 'username taken' if not", async ()=>{
     await request(server).post('/api/auth/register').send(userOne)
-    const res = await request(server).post('/api/auth/register').send(userOne)
+    const res = await request(server).post('/api/auth/register').send(userOne) //add the same username
     expect(res.body).toBe("username taken")
   })
   it("tests that user was added to the db", async ()=>{
-    await request(server).post('/api/auth/register').send(userOne)
+    await request(server).post('/api/auth/register').send(userOne) //add one user
     const user = await Users.find();
     expect(user).toHaveLength(1);
 
-    await request(server).post('/api/auth/register').send(userTwo)
+    await request(server).post('/api/auth/register').send(userTwo) //add another user
     const users = await Users.find();
     expect(users).toHaveLength(2);
   })
   it("tests that register must have a username and password", async ()=>{
-    const res = await request(server).post('/api/auth/register').send({password: "what's my name again?"})
+    const res = await request(server).post('/api/auth/register').send({password: "what's my name again?"}) // don't send a username
     expect(res.body).toBe("username and password required")
   })
 })
 
-describe("[POST] /auth/login testing", ()=>{
+//login
+describe("[POST] /api/auth/login - LOGIN", ()=>{
   it("tests the response for login to be 'welcome back, user' and give a token", async ()=>{
-    await request(server).post('/api/auth/register').send(userOne)
-    const login = await request(server).post('/api/auth/login').send(userOne)
+    await request(server).post('/api/auth/register').send(userOne) //first register a user
+    const login = await request(server).post('/api/auth/login').send(userOne) //login with it
     expect(login.body.message).toBe("welcome, Will");
-    expect(login.body.token).toBeTruthy();
+    expect(login.body.token).toBeTruthy(); //a token was given in the response
   })
   it("tests that login must have a username and password", async ()=>{
-    const login = await request(server).post('/api/auth/login').send({username: "I forgot my pass"})
+    const login = await request(server).post('/api/auth/login').send({username: "I forgot my pass"}) // don't include a password
     expect(login.body).toBe("username and password required")
   })
   it("test that the wrong password will give 'invalid credentials' error", async ()=>{
     await request(server).post('/api/auth/register').send(userOne)
-    const login = await request(server).post('/api/auth/login').send({username: "Will", password: "abc"})
+    const login = await request(server).post('/api/auth/login').send({username: "Will", password: "abc"}) //give the wrong password
     expect(login.body).toBe("invalid credentials")
   })
 })
 
-describe("[GET] /jokes testing", ()=>{
-  it("tests the response to be 200 ok with auth", async ()=>{
-    await request(server).post('/api/auth/register').send(userOne)
-    const login = await request(server).post('/api/auth/login').send(userOne)
-    const token = login.body.token
-    const res = await request(server).get('/api/jokes').set('Authorization', token)
+//get jokes (authorization required)
+describe("[GET] /api/jokes - JOKES", ()=>{
+  it("tests the response to be 200 ok with an authorized token and have a length of 3", async ()=>{
+    await request(server).post('/api/auth/register').send(userOne) //register
+    const login = await request(server).post('/api/auth/login').send(userOne) //login
+    const token = login.body.token //get token
+    const res = await request(server).get('/api/jokes').set('Authorization', token) //request jokes with the token
     expect(res.status).toBe(200)
+    expect(res.body).toHaveLength(3)
   })
   it("tests the response error to be 401 with no token", async ()=>{
-    const res = await request(server).get('/api/jokes')
+    const res = await request(server).get('/api/jokes') //no token
     expect(res.status).toBe(401)
   })
   it("tests the response message to be 'token required' with no token", async ()=>{
-    const res = await request(server).get('/api/jokes')
+    const res = await request(server).get('/api/jokes') //no token
     expect(res.body).toBe("token required")
   })
-  it("tests the response message to be 'token invalid' with wrong token", async ()=>{
-    const token = "1234567890WDAWDWADWADWADWADWASDASDASDASD"
-    const res = await request(server).get('/api/jokes').set('Authorization', token)
+  it("tests the response message to be 'token invalid' with the wrong token", async ()=>{
+    const badToken = "1234567890WDAWDWADWADWADWADWASDASDASDASD"
+    const res = await request(server).get('/api/jokes').set('Authorization', badToken) //the wrong token
     expect(res.body).toBe("token invalid")
   })
 })
