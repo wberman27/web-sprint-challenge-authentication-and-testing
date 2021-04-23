@@ -3,24 +3,21 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const {jwtSecret} = require('../secrets/index');
 const Users = require('../users/users-model')
+const {checkUserPass} = require('../middleware/checkUserPass')
 
-router.post('/register', (req, res, next) => {
+router.post('/register', checkUserPass, (req, res, next) => {
   let user = req.body;
-  if(!user.username || !user.password){
-    res.status(500).json("username and password required")
-  }else{
-    const hash = bcrypt.hashSync(user.password, 8);
-    user.password = hash;
+  const hash = bcrypt.hashSync(user.password, 8);
+  user.password = hash;
 
-    Users.add(user)
-    .then(addedUser =>{
-      res.status(201).json(addedUser[0]);
-    })
-    .catch(() =>{
-      res.status(401).json("username taken")
-    })
+  Users.add(user)
+  .then(addedUser =>{
+    res.status(201).json(addedUser[0]);
+  })
+  .catch(() =>{
+    res.status(401).json("username taken")
+  });
 
-  }
 
   /*
     IMPLEMENT
