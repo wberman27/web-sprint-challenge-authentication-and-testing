@@ -47,15 +47,30 @@ describe("[POST] /auth/register testing", ()=>{
     const users = await Users.find();
     expect(users).toHaveLength(2);
   })
+  it("tests that register must have a username and password", async ()=>{
+    const res = await request(server).post('/api/auth/register').send({password: "what's my name again?"})
+    expect(res.body).toBe("username and password required")
+  })
 })
+
 describe("[POST] /auth/login testing", ()=>{
-  it("tests the response", ()=>{
-
+  it("tests the response for login to be welcome back user with a token", async ()=>{
+    await request(server).post('/api/auth/register').send(userOne)
+    const login = await request(server).post('/api/auth/login').send(userOne)
+    expect(login.body.message).toBe("welcome, Will");
+    expect(login.body.token).toBeTruthy();
   })
-  it("testing more", ()=>{
-
+  it("tests that login must have a username and password", async ()=>{
+    const login = await request(server).post('/api/auth/login').send({username: "I forgot my pass"})
+    expect(login.body).toBe("username and password required")
+  })
+  it("test that the wrong password will give invalid credentials error", async ()=>{
+    await request(server).post('/api/auth/register').send(userOne)
+    const login = await request(server).post('/api/auth/login').send({username: "Will", password: "abc"})
+    expect(login.body).toBe("invalid credentials")
   })
 })
+
 describe("[GET] /jokes testing", ()=>{
   it("tests the response to be 200 ok with auth", async ()=>{
     await request(server).post('/api/auth/register').send(userOne)
